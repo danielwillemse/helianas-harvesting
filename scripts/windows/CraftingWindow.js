@@ -117,7 +117,15 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
      */
     #sortRecipes(recipes, column, direction) {
         const multiplier = direction === 'asc' ? 1 : -1;
-        const rarityOrder = ['common', 'uncommon', 'rare', 'veryRare', 'legendary', 'artifact'];
+
+        const rarityValues = {
+            'common': 0,
+            'uncommon': 1,
+            'rare': 2,
+            'veryRare': 3,
+            'legendary': 4,
+            'artifact': 5
+        };
 
         console.log('Sorting recipes by', column, direction);
         return [...recipes].sort((a, b) => {
@@ -128,9 +136,9 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
                     comparison = a.name.localeCompare(b.name);
                     break;
                 case 'rarity':
-                    const aRarityIndex = rarityOrder.indexOf(a.rarity);
-                    const bRarityIndex = rarityOrder.indexOf(b.rarity);
-                    comparison = aRarityIndex - bRarityIndex;
+                    const aRarityValue = rarityValues[a.rarity] ?? -1;
+                    const bRarityValue = rarityValues[b.rarity] ?? -1;
+                    comparison = aRarityValue - bRarityValue;
                     break;
                 case 'price':
                     comparison = (a.price ?? 0) - (b.price ?? 0);
