@@ -69,3 +69,72 @@
 .helianas-harvesting-module .sortable-header:active {
     background-color: rgba(255, 255, 255, 0.2);
 }
+
+/* Filter Token Styles */
+.helianas-harvesting-module .search-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.helianas-harvesting-module .filter-tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.helianas-harvesting-module .filter-token {
+    display: inline-flex;
+    align-items: center;
+    background-color: rgba(100, 150, 200, 0.2);
+    border: 1px solid rgba(100, 150, 200, 0.4);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.9em;
+    line-height: 1.2;
+    gap: 6px;
+}
+
+.helianas-harvesting-module .filter-token .token-label {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.helianas-harvesting-module .filter-token .token-remove {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 1.2em;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.helianas-harvesting-module .filter-token .token-remove:hover {
+    background-color: rgba(200, 50, 50, 0.2);
+    color: #c00;
+}
+
+.helianas-harvesting-module .filter-token .token-remove:active {
+    background-color: rgba(200, 50, 50, 0.3);
+}
+
+/* Different colors for different token types */
+.helianas-harvesting-module .filter-token[data-token-text^="c:"] {
+    background-color: rgba(150, 200, 100, 0.2);
+    border-color: rgba(150, 200, 100, 0.4);
+}
+
+.helianas-harvesting-module .filter-token[data-token-text^="n:"] {
+    background-color: rgba(200, 150, 100, 0.2);
+    border-color: rgba(200, 150, 100, 0.4);
+}

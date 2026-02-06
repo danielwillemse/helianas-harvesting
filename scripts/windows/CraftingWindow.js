@@ -17,6 +17,12 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
     searchText = "";
 
     /**
+     * Committed Search Text (for token display)
+     * Only updated when Enter is pressed
+     */
+    committedSearchText = "";
+
+    /**
      * Current sort column
      * @type {string|null}
      */
@@ -51,7 +57,8 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
         tag: "div",
         actions: {
             openRecipe: CraftingWindow.prototype._onOpenRecipe,
-            sortColumn: CraftingWindow.prototype._onSortColumn
+            sortColumn: CraftingWindow.prototype._onSortColumn,
+            removeFilterToken: CraftingWindow.prototype._onRemoveFilterToken
         }
     };
 
@@ -77,8 +84,76 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
         if (this.rendered) this.render();
     }
 
+    /**
+     * Parses search text to extract filter tokens for display
+     * @param {string} text Search string
+     * @returns {Array} Array of token objects {type, value, display}
+     */
+    #parseFilterTokens(text) {
+        if (!text || !text.trim()) return [];
+
+        const tokens = [];
+        // Split by comma first, then by spaces within each part
+        // This handles both "c:dragon, n:staff" and "c:dragon n:staff" formats
+        const commaParts = text.split(',').map(p => p.trim()).filter(p => p.length > 0);
+
+        for (const commaPart of commaParts) {
+            // Split by spaces within each comma-separated part
+            const spaceParts = commaPart.split(/\s+/).filter(p => p.trim().length > 0);
+
+            for (const part of spaceParts) {
+                const trimmed = part.trim();
+                if (trimmed.startsWith('c:')) {
+                    const value = trimmed.substring(2).trim();
+                    if (value) {
+                        tokens.push({
+                            type: 'component',
+                            value: value,
+                            display: `c:${value}`,
+                            fullText: trimmed
+                        });
+                    }
+                } else if (trimmed.startsWith('n:')) {
+                    const value = trimmed.substring(2).trim();
+                    if (value) {
+                        tokens.push({
+                            type: 'name',
+                            value: value,
+                            display: `n:${value}`,
+                            fullText: trimmed
+                        });
+                    }
+                } else if (trimmed) {
+                    // Regular keyword - we'll show it as a general token
+                    tokens.push({
+                        type: 'general',
+                        value: trimmed,
+                        display: trimmed,
+                        fullText: trimmed
+                    });
+                }
+            }
+        }
+
+        return tokens;
+    }
+
     async _prepareContext(options) {
-        let recipes = this.recipeDatabase.searchItems(this.searchText);
+        // Combine committed tokens with current input for search
+        // This allows real-time filtering while maintaining accumulated tokens
+        let searchQuery = '';
+        if (this.committedSearchText && this.searchText) {
+            // Combine both: committed tokens + current input
+            searchQuery = `${this.committedSearchText} ${this.searchText}`.trim();
+        } else if (this.committedSearchText) {
+            // Only committed tokens
+            searchQuery = this.committedSearchText;
+        } else {
+            // Only current input (real-time search)
+            searchQuery = this.searchText;
+        }
+
+        let recipes = this.recipeDatabase.searchItems(searchQuery);
 
         console.log('Preparing context');
         // Apply sorting
@@ -98,13 +173,17 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
             components: this.sortColumn === 'components' ? (this.sortDirection === 'asc' ? '↑' : '↓') : ''
         };
 
+        // Parse filter tokens for display (only from committed search text)
+        const filterTokens = this.#parseFilterTokens(this.committedSearchText);
+
         return {
             rarityNames: game.system.config.itemRarity,
             recipes: recipes,
             searchText: this.searchText,
             sortColumn: this.sortColumn,
             sortDirection: this.sortDirection,
-            sortIndicators: sortIndicators
+            sortIndicators: sortIndicators,
+            filterTokens: filterTokens
         };
     }
 
@@ -197,6 +276,99 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
         this.#updateForm(target);
     }
 
+    _onKeyDownManaged(event, target) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+
+            const inputValue = target.value.trim();
+            if (!inputValue) return;
+
+            const hasTokenPrefix = inputValue.startsWith('c:') || inputValue.startsWith('n:') ||
+                                   (inputValue.includes(',') && inputValue.split(',').some(part => {
+                                       const trimmed = part.trim();
+                                       return trimmed.startsWith('c:') || trimmed.startsWith('n:');
+                                   }));
+
+            if (!hasTokenPrefix) {
+                this.updateForm({ searchText: inputValue });
+                return;
+            }
+
+            const newTokens = [];
+
+            if (inputValue.includes(',')) {
+                // Split by comma and create separate tokens
+                const commaParts = inputValue.split(',').map(p => p.trim()).filter(p => p.length > 0);
+                for (const part of commaParts) {
+                    const trimmed = part.trim();
+                    if (trimmed.startsWith('c:')) {
+                        const value = trimmed.substring(2).trim();
+                        if (value) {
+                            newTokens.push({
+                                type: 'component',
+                                value: value,
+                                display: `c:${value}`,
+                                fullText: trimmed
+                            });
+                        }
+                    } else if (trimmed.startsWith('n:')) {
+                        const value = trimmed.substring(2).trim();
+                        if (value) {
+                            newTokens.push({
+                                type: 'name',
+                                value: value,
+                                display: `n:${value}`,
+                                fullText: trimmed
+                            });
+                        }
+                    }
+                }
+            } else {
+                const trimmed = inputValue.trim();
+                if (trimmed.startsWith('c:')) {
+                    const value = trimmed.substring(2).trim();
+                    if (value) {
+                        newTokens.push({
+                            type: 'component',
+                            value: value,
+                            display: `c:${value}`,
+                            fullText: trimmed
+                        });
+                    }
+                } else if (trimmed.startsWith('n:')) {
+                    const value = trimmed.substring(2).trim();
+                    if (value) {
+                        newTokens.push({
+                            type: 'name',
+                            value: value,
+                            display: `n:${value}`,
+                            fullText: trimmed
+                        });
+                    }
+                }
+            }
+
+            // Get existing committed tokens
+            const existingTokens = this.#parseFilterTokens(this.committedSearchText);
+
+            // Combine tokens, avoiding duplicates (based on fullText)
+            const existingFullTexts = new Set(existingTokens.map(t => t.fullText));
+            const uniqueNewTokens = newTokens.filter(t => !existingFullTexts.has(t.fullText));
+
+            // Combine all committed tokens
+            const allTokens = [...existingTokens, ...uniqueNewTokens];
+
+            // Reconstruct committed search text from all tokens
+            const tokenParts = allTokens.map(t => t.fullText);
+            this.committedSearchText = tokenParts.join(' ').trim();
+
+            // Clear the input field
+            this.searchText = '';
+            target.value = '';
+            this.updateForm({ searchText: '' });
+        }
+    }
+
     #updateForm(target) {
         const input = {};
         input[target.dataset.binding] = target.value;
@@ -214,6 +386,26 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
         const { sortColumn } = target.dataset;
         if (sortColumn) {
             this.updateForm({ sortColumn });
+        }
+    }
+
+    _onRemoveFilterToken(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        const { tokenText } = target.dataset;
+
+        if (tokenText && this.committedSearchText) {
+            // Parse current tokens and remove the one being deleted
+            const currentTokens = this.#parseFilterTokens(this.committedSearchText);
+            const remainingTokens = currentTokens.filter(t => t.fullText !== tokenText);
+
+            // Reconstruct search text from remaining tokens
+            const parts = remainingTokens.map(t => t.fullText);
+            const newSearchText = parts.join(' ').trim();
+
+            // Update committed search text only, clear the input field
+            this.committedSearchText = newSearchText;
+            this.updateForm({ searchText: '' });
         }
     }
 
@@ -243,6 +435,12 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
             //el.addEventListener('blur', e => this._onBlurManaged(e, e.currentTarget), { signal });
             el.addEventListener('input', e => this._onInputManaged(e, e.currentTarget), { signal });
             el.addEventListener('change', e => this._onChangeManaged(e, e.currentTarget), { signal });
+            el.addEventListener('keydown', e => this._onKeyDownManaged(e, e.currentTarget), { signal });
+        });
+
+        // Wire up token removal buttons
+        this.element.querySelectorAll('[data-action="removeFilterToken"]').forEach(el => {
+            el.addEventListener('click', e => this._onRemoveFilterToken(e, e.currentTarget), { signal });
         });
     }
 

@@ -1,14 +1,30 @@
 <form style="overflow-y: scroll;">
   <div class="form-group">
     <div class="form-fields">
-      <input
-        type="text"
-        class="managed-input debounce form-control"
-        id="recipe-search"
-        value="{{searchText}}"
-        data-binding="searchText"
-        placeholder="{{localize "HelianasHarvest.RecipeSearch"}}"
-      />
+      <div class="search-container">
+        <div class="filter-tokens">
+          {{#each filterTokens}}
+            <span class="filter-token" data-token-text="{{this.fullText}}">
+              <span class="token-label">{{this.display}}</span>
+              <button
+                type="button"
+                class="token-remove"
+                data-action="removeFilterToken"
+                data-token-text="{{this.fullText}}"
+                aria-label="Remove filter"
+              >×</button>
+            </span>
+          {{/each}}
+        </div>
+        <input
+          type="text"
+          class="managed-input debounce form-control"
+          id="recipe-search"
+          value="{{searchText}}"
+          data-binding="searchText"
+          placeholder="{{localize "HelianasHarvest.RecipeSearch"}}"
+        />
+      </div>
     </div>
   </div>
   <table>

@@ -93,6 +93,46 @@ export class RecipeDatabase {
     }
 
     /**
+     * Parses search text to extract filters
+     * Supports syntax like "c:dragon, n:staff" or "c:dragon n:staff"
+     *
+     * @param {string} text Search string
+     * @returns {Object} Object with filters and remaining text
+     */
+    #parseFilters(text) {
+        const filters = {
+            component: [], // c:value
+            name: [],      // n:value
+            general: []    // plain text keywords
+        };
+
+        // Split by comma first, then by spaces within each part
+        // This handles both "c:dragon, n:staff" and "c:dragon n:staff" formats
+        const commaParts = text.split(',').map(p => p.trim()).filter(p => p.length > 0);
+
+        for (const commaPart of commaParts) {
+            // Split by spaces within each comma-separated part
+            const spaceParts = commaPart.split(/\s+/).filter(p => p.trim().length > 0);
+
+            for (const part of spaceParts) {
+                const trimmed = part.trim();
+                if (trimmed.startsWith('c:')) {
+                    const value = trimmed.substring(2).trim();
+                    if (value) filters.component.push(value.toLowerCase());
+                } else if (trimmed.startsWith('n:')) {
+                    const value = trimmed.substring(2).trim();
+                    if (value) filters.name.push(value.toLowerCase());
+                } else if (trimmed) {
+                    // Regular keyword search
+                    filters.general.push(trimmed.toLowerCase());
+                }
+            }
+        }
+
+        return filters;
+    }
+
+    /**
      * Searches all recipes to find
      *
      * @param {string} text Search string
@@ -100,10 +140,40 @@ export class RecipeDatabase {
      * @returns {any[]} results
      */
     searchItems(text) {
-        let keywords = text.toLowerCase().split(" ");
+        if (!text || !text.trim()) {
+            return this._recipes;
+        }
+
+        const filters = this.#parseFilters(text);
 
         return this._recipes.filter(r => {
-            return keywords.every(word => (r.searchText.includes(word)));
+            // Apply component filters (c:value)
+            if (filters.component.length > 0) {
+                const componentNames = r.components.map(c => c?.name?.toLowerCase() ?? '').join(' ');
+                const matchesComponent = filters.component.every(filter =>
+                    componentNames.includes(filter)
+                );
+                if (!matchesComponent) return false;
+            }
+
+            // Apply name filters (n:value)
+            if (filters.name.length > 0) {
+                const recipeName = r.name.toLowerCase();
+                const matchesName = filters.name.every(filter =>
+                    recipeName.includes(filter)
+                );
+                if (!matchesName) return false;
+            }
+
+            // Apply general keyword filters (backward compatibility)
+            if (filters.general.length > 0) {
+                const matchesGeneral = filters.general.every(keyword =>
+                    r.searchText.includes(keyword)
+                );
+                if (!matchesGeneral) return false;
+            }
+
+            return true;
         });
     }
 
