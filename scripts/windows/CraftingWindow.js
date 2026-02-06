@@ -16,6 +16,18 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
      */
     searchText = "";
 
+    /**
+     * Current sort column
+     * @type {string|null}
+     */
+    sortColumn = null;
+
+    /**
+     * Current sort direction ('asc' or 'desc')
+     * @type {string}
+     */
+    sortDirection = 'asc';
+
     #activeElementId = false;
     #cursorPosition = { start: 0, end: 0 };
     #debounceSchedule = false;
@@ -38,7 +50,8 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
         window: { title: "HelianasHarvest.CraftWindowTitle", resize: true },
         tag: "div",
         actions: {
-            openRecipe: CraftingWindow.prototype._onOpenRecipe
+            openRecipe: CraftingWindow.prototype._onOpenRecipe,
+            sortColumn: CraftingWindow.prototype._onSortColumn
         }
     };
 
@@ -51,17 +64,100 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
             this.searchText = newValues.searchText;
         }
 
+        if (typeof newValues.sortColumn === "string") {
+            // If clicking the same column, toggle direction
+            if (this.sortColumn === newValues.sortColumn) {
+                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortColumn = newValues.sortColumn;
+                this.sortDirection = 'asc';
+            }
+        }
+
         if (this.rendered) this.render();
     }
 
     async _prepareContext(options) {
+        let recipes = this.recipeDatabase.searchItems(this.searchText);
+
+        console.log('Preparing context');
+        // Apply sorting
+        if (this.sortColumn) {
+            recipes = this.#sortRecipes(recipes, this.sortColumn, this.sortDirection);
+        } else {
+            // Default sort by name
+            recipes = recipes.sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        // Prepare sort indicators for each column
+        const sortIndicators = {
+            name: this.sortColumn === 'name' ? (this.sortDirection === 'asc' ? '↑' : '↓') : '',
+            rarity: this.sortColumn === 'rarity' ? (this.sortDirection === 'asc' ? '↑' : '↓') : '',
+            price: this.sortColumn === 'price' ? (this.sortDirection === 'asc' ? '↑' : '↓') : '',
+            metatag: this.sortColumn === 'metatag' ? (this.sortDirection === 'asc' ? '↑' : '↓') : '',
+            components: this.sortColumn === 'components' ? (this.sortDirection === 'asc' ? '↑' : '↓') : ''
+        };
+
         return {
             rarityNames: game.system.config.itemRarity,
-            recipes: this.recipeDatabase
-                .searchItems(this.searchText)
-                .sort((a, b) => a.name.localeCompare(b.name)),
-            searchText: this.searchText
+            recipes: recipes,
+            searchText: this.searchText,
+            sortColumn: this.sortColumn,
+            sortDirection: this.sortDirection,
+            sortIndicators: sortIndicators
         };
+    }
+
+    /**
+     * Sort recipes by the specified column
+     * @param {Array} recipes - Array of recipes to sort
+     * @param {string} column - Column name to sort by
+     * @param {string} direction - 'asc' or 'desc'
+     * @returns {Array} Sorted recipes
+     */
+    #sortRecipes(recipes, column, direction) {
+        const multiplier = direction === 'asc' ? 1 : -1;
+        const rarityOrder = ['common', 'uncommon', 'rare', 'veryRare', 'legendary', 'artifact'];
+
+        console.log('Sorting recipes by', column, direction);
+        return [...recipes].sort((a, b) => {
+            let comparison = 0;
+
+            switch (column) {
+                case 'name':
+                    comparison = a.name.localeCompare(b.name);
+                    break;
+                case 'rarity':
+                    const aRarityIndex = rarityOrder.indexOf(a.rarity);
+                    const bRarityIndex = rarityOrder.indexOf(b.rarity);
+                    comparison = aRarityIndex - bRarityIndex;
+                    break;
+                case 'price':
+                    comparison = (a.price ?? 0) - (b.price ?? 0);
+                    break;
+                case 'metatag':
+                    const aMetatag = a.metatag ?? '';
+                    const bMetatag = b.metatag ?? '';
+                    comparison = aMetatag.localeCompare(bMetatag);
+                    break;
+                case 'components':
+                    // Sort by number of components, then by first component name
+                    const aComponentCount = a.components?.length ?? 0;
+                    const bComponentCount = b.components?.length ?? 0;
+                    if (aComponentCount !== bComponentCount) {
+                        comparison = aComponentCount - bComponentCount;
+                    } else {
+                        const aFirstComponent = a.components?.[0]?.name ?? '';
+                        const bFirstComponent = b.components?.[0]?.name ?? '';
+                        comparison = aFirstComponent.localeCompare(bFirstComponent);
+                    }
+                    break;
+                default:
+                    comparison = 0;
+            }
+
+            return comparison * multiplier;
+        });
     }
 
     // Event Listeners
@@ -103,6 +199,14 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
         event.preventDefault();
         const { itemName, itemLink } = target.dataset;
         await this.send(itemName, itemLink);
+    }
+
+    _onSortColumn(event, target) {
+        event.preventDefault();
+        const { sortColumn } = target.dataset;
+        if (sortColumn) {
+            this.updateForm({ sortColumn });
+        }
     }
 
     _onRender(ctx, opts) {

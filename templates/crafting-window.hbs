@@ -14,11 +14,21 @@
   <table>
     <thead>
       <tr>
-        <th scope="col">{{localize "HelianasHarvest.ItemNameHeader"}}</th>
-        <th scope="col">{{localize "HelianasHarvest.ItemRarity"}}</th>
-        <th scope="col">{{localize "HelianasHarvest.ItemPriceHeader"}}</th>
-        <th scope="col">{{localize "HelianasHarvest.RecipeMetatag"}}</th>
-        <th scope="col">{{localize "HelianasHarvest.RequiredComponents"}}</th>
+        <th scope="col" class="sortable-header" data-sort-column="name" data-action="sortColumn">
+          {{localize "HelianasHarvest.ItemNameHeader"}} {{sortIndicators.name}}
+        </th>
+        <th scope="col" class="sortable-header" data-sort-column="rarity" data-action="sortColumn">
+          {{localize "HelianasHarvest.ItemRarity"}} {{sortIndicators.rarity}}
+        </th>
+        <th scope="col" class="sortable-header" data-sort-column="price" data-action="sortColumn">
+          {{localize "HelianasHarvest.ItemPriceHeader"}} {{sortIndicators.price}}
+        </th>
+        <th scope="col" class="sortable-header" data-sort-column="metatag" data-action="sortColumn">
+          {{localize "HelianasHarvest.RecipeMetatag"}} {{sortIndicators.metatag}}
+        </th>
+        <th scope="col" class="sortable-header" data-sort-column="components" data-action="sortColumn">
+          {{localize "HelianasHarvest.RequiredComponents"}} {{sortIndicators.components}}
+        </th>
       </tr>
     </thead>
     <tbody>

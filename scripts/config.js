@@ -1,6 +1,6 @@
 export const Config = {
-    HarvestWindowTemplate: "modules/helianas-harvesting/templates/harvest-window.hbs",
-    CraftWindowTemplate: "modules/helianas-harvesting/templates/crafting-window.hbs",
-    PlayerSelectWindowTemplate: "modules/helianas-harvesting/templates/player-select-window.hbs",
-    StatisticsWindowTemplate:"modules/helianas-harvesting/templates/statistics-window.hbs"
+    HarvestWindowTemplate: "modules/harvesting/templates/harvest-window.hbs",
+    CraftWindowTemplate: "modules/harvesting/templates/crafting-window.hbs",
+    PlayerSelectWindowTemplate: "modules/harvesting/templates/player-select-window.hbs",
+    StatisticsWindowTemplate:"modules/harvesting/templates/statistics-window.hbs"
 };
