@@ -183,7 +183,8 @@ export default class CraftingWindow extends HandlebarsApplicationMixin(Applicati
             sortColumn: this.sortColumn,
             sortDirection: this.sortDirection,
             sortIndicators: sortIndicators,
-            filterTokens: filterTokens
+            filterTokens: filterTokens,
+            isGM: game.user.isGM
         };
     }
 

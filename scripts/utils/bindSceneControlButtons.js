@@ -27,7 +27,7 @@ export function bindSceneControlButtons(controls) {
         title: "HelianasHarvest.CraftControl",
         icon: "fa-solid fa-hammer-crash",
         layer: "tokens",
-        visible: game.user.isGM,
+        visible: true,
         button: true,
         onChange: () => {
             const { recipeDatabase } = game.modules.get("helianas-harvesting").api;

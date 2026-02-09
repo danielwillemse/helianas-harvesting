@@ -51,6 +51,7 @@
       {{#each recipes}}
         <tr class="harvest-table-row">
           <td>
+            {{#if ../isGM}}
             <a
               class="recipe-item-name display-image-name"
               data-item-name="{{ this.name }}"
@@ -67,6 +68,19 @@
                 {{#if (gt this.qty 1)}} (x{{this.qty}}) {{/if}}
               </div>
             </a>
+            {{else}}
+            <div class="recipe-item-name display-image-name">
+              <img
+                src="{{this.img}}"
+                alt="{{this.name}}"
+                style="max-height: 2rem;"
+              />
+              <div>
+                {{this.name}}
+                {{#if (gt this.qty 1)}} (x{{this.qty}}) {{/if}}
+              </div>
+            </div>
+            {{/if}}
           </td>
           <td style="text-align: center;">
             {{ getProperty ../rarityNames this.rarity }}
